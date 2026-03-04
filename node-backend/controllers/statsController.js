@@ -11,7 +11,7 @@ const getStats = async (req, res) => {
 
     // Return shape frontend expects (unwrap if Go sent envelope)
     const data = stats?.data ?? stats;
-    if (!data) {
+    if (data === undefined || data === null) {
       return res.json({
         users: { total: 0 },
         tasks: { total: 0, pending: 0, inProgress: 0, completed: 0 }
@@ -35,10 +35,12 @@ const getStats = async (req, res) => {
 
     res.json(data);
   } catch (error) {
-    const statusCode = error.statusCode || (error.message.includes('ECONNREFUSED') ? 503 : 500);
+    const errMsg = error?.message ?? String(error ?? 'Failed to fetch stats');
+    const statusCode = error?.statusCode || ((errMsg.includes('ECONNREFUSED') || errMsg.includes('unavailable')) ? 503 : 500);
+    logger.logError(req.method, req.originalUrl, statusCode, 0, 'GetStatsError', errMsg);
     res.status(statusCode).json({
-      error: error.message || 'Failed to fetch stats',
-      code: error.code || 'BACKEND_ERROR'
+      error: errMsg,
+      code: 'BACKEND_ERROR'
     });
   }
 };
@@ -48,12 +50,18 @@ const getStats = async (req, res) => {
  */
 const getCacheStats = async (req, res) => {
   try {
-    const raw = await makeRequest('/api/cache/stats');
+    const raw = await makeRequest('/api/stats/cache');
     const cacheStats = raw?.data ?? raw;
     logger.logCacheStats(cacheStats?.cache ?? cacheStats);
     res.json(cacheStats);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const errMsg = error?.message ?? String(error ?? 'Failed to fetch cache stats');
+    const statusCode = error?.statusCode || ((errMsg.includes('ECONNREFUSED') || errMsg.includes('unavailable')) ? 503 : 500);
+    logger.logError(req.method, '/api/stats/cache', statusCode, 0, 'GetCacheStatsError', errMsg);
+    res.status(statusCode).json({
+      error: errMsg,
+      code: 'BACKEND_ERROR'
+    });
   }
 };
 

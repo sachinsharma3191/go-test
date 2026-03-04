@@ -8,15 +8,14 @@ const cache = require('../utils/cache');
  */
 const getAllTasks = async (req, res) => {
   try {
-    const status = req.query.status || '';
-    const userId = req.query.userId || '';
+    const status = req.query?.status || '';
+    const userId = req.query?.userId || '';
     const cacheKey = status || userId ? `tasks:status:${status}:userId:${userId}` : 'tasks';
 
     let url = '/api/tasks';
-    if (status || userId) {
-      const params = new URLSearchParams();
-      if (status) params.append('status', status);
-      if (userId) params.append('userId', userId);
+    const queryKeys = Object.keys(req.query || {});
+    if (queryKeys.length > 0) {
+      const params = new URLSearchParams(req.query);
       url += '?' + params.toString();
     }
 
@@ -28,27 +27,34 @@ const getAllTasks = async (req, res) => {
     const result = { tasks, count };
 
     // Refresh cache when API has more data than cache (keeps tasks in sync with stats)
-    const cached = cache.get(cacheKey);
-    let cachedCount = 0;
-    if (cached) {
-      try {
-        const p = JSON.parse(cached);
-        cachedCount = p?.count ?? p?.tasks?.length ?? 0;
-      } catch {
-        /* ignore */
+    try {
+      let cached = cache.get(cacheKey);
+      let cachedCount = 0;
+      let parseOk = false;
+      if (cached) {
+        try {
+          const p = JSON.parse(cached);
+          cachedCount = p?.count ?? p?.tasks?.length ?? 0;
+          parseOk = true;
+        } catch {
+          /* malformed cache, treat as empty */
+        }
       }
-    }
-    if (!cached || count > cachedCount) {
-      cache.set(cacheKey, JSON.stringify(result));
+      if (!cached || !parseOk || count > cachedCount) {
+        cache.set(cacheKey, JSON.stringify(result));
+      }
+    } catch {
+      /* ignore cache errors, still return response */
     }
 
     return res.json(result);
   } catch (error) {
-    const statusCode = error.statusCode || (error.message.includes('ECONNREFUSED') ? 503 : 500);
-    logger.logError(req.method, req.originalUrl, statusCode, 0, 'GetTasksError', error.message);
+    const errMsg = error?.message ?? String(error);
+    const statusCode = error?.statusCode || (errMsg.includes('ECONNREFUSED') ? 503 : 500);
+    logger.logError(req.method, req.originalUrl, statusCode, 0, 'GetTasksError', errMsg);
     res.status(statusCode).json({
-      error: error.message || 'Failed to fetch tasks',
-      code: error.code || 'BACKEND_ERROR'
+      error: errMsg || 'Failed to fetch tasks',
+      code: error?.code || 'BACKEND_ERROR'
     });
   }
 };
@@ -141,9 +147,30 @@ const updateTask = async (req, res) => {
   }
 };
 
+/**
+ * Delete a task
+ */
+const deleteTask = async (req, res) => {
+  try {
+    await makeRequest(`/api/tasks/${req.params.id}`, {
+      method: 'DELETE'
+    });
+    cache.invalidate('tasks');
+    res.json({ message: 'Task deleted successfully' });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    const isNotFound = statusCode === 404 || error.message.toLowerCase().includes('not found');
+    if (isNotFound) {
+      return res.status(404).json({ error: error.message });
+    }
+    res.status(statusCode).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getAllTasks,
   getTaskById,
   createTask,
-  updateTask
+  updateTask,
+  deleteTask
 };

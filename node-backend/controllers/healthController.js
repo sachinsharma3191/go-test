@@ -13,10 +13,11 @@ const getHealth = async (req, res) => {
       goBackend: goHealth
     });
   } catch (error) {
+    const errMsg = error?.message ?? (typeof error === 'string' ? error : String(error ?? 'Unknown error'));
     res.status(503).json({ 
       status: 'error', 
       message: 'Node.js backend is running but Go backend is unavailable',
-      error: error.message
+      error: errMsg
     });
   }
 };

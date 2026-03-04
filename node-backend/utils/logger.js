@@ -55,7 +55,8 @@ class Logger {
    */
   logCacheStats(stats) {
     const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    const message = `${timestamp} CACHE_STATS hits=${stats.hits} misses=${stats.misses} evictions=${stats.evictions} entries=${stats.totalEntries}`;
+    const s = stats || {};
+    const message = `${timestamp} CACHE_STATS hits=${s.hits} misses=${s.misses} evictions=${s.evictions} entries=${s.totalEntries}`;
     console.log(message);
   }
 

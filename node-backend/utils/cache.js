@@ -19,10 +19,12 @@ function cleanupExpired() {
   stats.totalEntries = store.size;
 }
 
-// Run cleanup every minute
-setInterval(cleanupExpired, 60 * 1000);
+// Run cleanup every minute (.unref() allows Jest/Node to exit when tests finish)
+const cleanupInterval = setInterval(cleanupExpired, 60 * 1000);
+if (cleanupInterval.unref) cleanupInterval.unref();
 
 function get(key) {
+  if (key == null) return null;
   const entry = store.get(key);
   if (!entry) {
     stats.misses++;
@@ -38,15 +40,23 @@ function get(key) {
   return entry.value;
 }
 
-function set(key, value) {
-  const expiresAt = TTL_MS > 0 ? Date.now() + TTL_MS : null;
+function set(key, value, ttlMs) {
+  if (key == null) return;
+  let expiresAt = null;
+  if (ttlMs !== undefined) {
+    if (ttlMs > 0) expiresAt = Date.now() + ttlMs;
+    else if (ttlMs === 0) { store.delete(key); stats.totalEntries = store.size; return; }
+  } else if (TTL_MS > 0) {
+    expiresAt = Date.now() + TTL_MS;
+  }
   store.set(key, { value, expiresAt });
   stats.totalEntries = store.size;
 }
 
 function invalidate(pattern) {
+  if (pattern == null) return;
   for (const key of store.keys()) {
-    if (key.includes(pattern)) {
+    if (key != null && pattern != null && String(key).includes(String(pattern))) {
       store.delete(key);
       stats.evictions++;
     }
@@ -59,9 +69,18 @@ function getStats() {
   return { ...stats };
 }
 
+function clear() {
+  store.clear();
+  stats.hits = 0;
+  stats.misses = 0;
+  stats.evictions = 0;
+  stats.totalEntries = 0;
+}
+
 module.exports = {
   get,
   set,
   invalidate,
-  getStats
+  getStats,
+  clear
 };

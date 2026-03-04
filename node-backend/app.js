@@ -20,9 +20,11 @@ app.use(routes);
 app.use(errorHandler);
 app.use(notFoundHandler);
 
-// Start server
-app.listen(config.PORT, () => {
-  logger.logStartup(config.PORT, config.GO_BACKEND_URL);
-});
+// Start server only when not in test (supertest uses app directly)
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(config.PORT, () => {
+    logger.logStartup(config.PORT, config.GO_BACKEND_URL);
+  });
+}
 
 module.exports = app;

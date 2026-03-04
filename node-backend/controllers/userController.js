@@ -10,9 +10,18 @@ const CACHE_KEY_USERS = 'users';
  */
 const getAllUsers = async (req, res) => {
   try {
-    const cached = cache.get(CACHE_KEY_USERS);
+    let cached;
+    try {
+      cached = cache.get(CACHE_KEY_USERS);
+    } catch {
+      cached = null;
+    }
     if (cached) {
-      return res.json(JSON.parse(cached));
+      try {
+        return res.json(JSON.parse(cached));
+      } catch {
+        // Malformed cached data, fallback to backend
+      }
     }
 
     const response = await makeRequest('/api/users');
@@ -21,14 +30,19 @@ const getAllUsers = async (req, res) => {
     const users = response?.users ?? response?.data?.users ?? [];
     const count = response?.count ?? response?.data?.count ?? users.length;
     const result = { users, count };
-    cache.set(CACHE_KEY_USERS, JSON.stringify(result));
+    try {
+      cache.set(CACHE_KEY_USERS, JSON.stringify(result));
+    } catch {
+      // Ignore cache set errors, still return response
+    }
     return res.json(result);
   } catch (error) {
-    const statusCode = error.statusCode || (error.message.includes('ECONNREFUSED') ? 503 : 500);
-    logger.logError(req.method, req.originalUrl, statusCode, 0, 'GetUsersError', error.message);
+    const errMsg = error?.message ?? String(error);
+    const statusCode = error?.statusCode || (errMsg.includes('ECONNREFUSED') || errMsg.includes('unavailable') ? 503 : 500);
+    logger.logError(req.method, req.originalUrl, statusCode, 0, 'GetUsersError', errMsg);
     res.status(statusCode).json({
-      error: error.message || 'Failed to fetch users',
-      code: error.code || 'BACKEND_ERROR'
+      error: errMsg || 'Failed to fetch users',
+      code: error?.code || 'BACKEND_ERROR'
     });
   }
 };
@@ -49,11 +63,12 @@ const getUserById = async (req, res) => {
     cache.set(cacheKey, JSON.stringify(user));
     res.json(user);
   } catch (error) {
-    const statusCode = error.statusCode || (error.message.includes('not found') ? 404 : 500);
-    logger.logError(req.method, req.originalUrl, statusCode, 0, 'GetUserByIdError', error.message);
+    const errMsg = error?.message ?? String(error);
+    const statusCode = error?.statusCode || (errMsg.includes('not found') ? 404 : 500);
+    logger.logError(req.method, req.originalUrl, statusCode, 0, 'GetUserByIdError', errMsg);
     res.status(statusCode).json({
-      error: error.message || 'User not found',
-      code: error.code || 'NOT_FOUND'
+      error: errMsg || 'User not found',
+      code: error?.code || 'NOT_FOUND'
     });
   }
 };
@@ -80,10 +95,11 @@ const createUser = async (req, res) => {
     cache.invalidate('users');
     res.status(201).json(user);
   } catch (error) {
-    const statusCode = error.statusCode || (error.message.includes('400') ? 400 : 500);
+    const errMsg = error?.message ?? String(error);
+    const statusCode = error?.statusCode || (errMsg.includes('400') ? 400 : 500);
     const errorName = statusCode === 400 ? 'ValidationError' : 'CreateUserError';
-    logger.logError(req.method, req.originalUrl, statusCode, 0, errorName, error.message);
-    res.status(statusCode).json({ error: error.message });
+    logger.logError(req.method, req.originalUrl, statusCode, 0, errorName, errMsg);
+    res.status(statusCode).json({ error: errMsg });
   }
 };
 
