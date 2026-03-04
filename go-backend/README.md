@@ -164,7 +164,41 @@ go-backend/
   - ✅ Edge Cases
   - ✅ Integration Scenarios
 
-## 🚀 **Getting Started**
+## � **Documentation**
+
+### **📖 API Documentation**
+- **[API Documentation](./API_DOCUMENTATION.md)**: Complete REST API reference
+  - All endpoints with examples
+  - Request/response formats
+  - Error codes and handling
+  - Authentication and CORS details
+
+### **🏗️ Design Documentation**
+- **[Design Decisions](./DESIGN_DECISIONS.md)**: Architectural decisions and rationale
+  - Layered architecture explanation
+  - Repository pattern with generics
+  - Error handling strategy
+  - Future considerations and trade-offs
+
+### **🧪 Testing Documentation**
+- **Test Coverage**: 22 test files with 150+ test functions
+- **Testing Strategy**: Unit, integration, and end-to-end tests
+- **Test Examples**: See individual `*_test.go` files
+
+### **📖 GoDoc Documentation**
+All exported functions and types have comprehensive GoDoc comments:
+```bash
+# View package documentation
+go doc ./...
+
+# View specific package
+go doc ./repository
+
+# View specific function
+go doc ./repository.NewUserRepository
+```
+
+## �🚀 **Getting Started**
 
 ### **Prerequisites**
 - Go 1.21 or higher

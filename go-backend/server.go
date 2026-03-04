@@ -1,3 +1,27 @@
+// Package main provides the entry point and server configuration for the Go backend API.
+//
+// This server implements a RESTful API for user and task management with the following features:
+//   - JSON file-based storage with atomic operations
+//   - In-memory caching with TTL support
+//   - Health monitoring and readiness probes
+//   - Structured logging and error handling
+//   - Graceful shutdown with signal handling
+//
+// Architecture:
+//   - Handler Layer: HTTP request/response processing
+//   - Service Layer: Business logic and validation
+//   - Repository Layer: Data access and persistence
+//   - Store Layer: File-based storage abstraction
+//
+// Environment Variables:
+//   - STORE_BACKEND: Storage backend type (default: "json")
+//   - DATA_FILE: Path to JSON data file (default: "data/data.json")
+//
+// Default Configuration:
+//   - Port: 8080
+//   - Read/Write Timeout: 15 seconds
+//   - Idle Timeout: 60 seconds
+//   - Shutdown Timeout: 30 seconds
 package main
 
 import (
@@ -20,6 +44,9 @@ const (
 	port    = "8080"
 )
 
+// main is the application entry point.
+// It initializes and starts the HTTP server with default signal-based shutdown handling.
+// This function calls runMain with a nil shutdown channel to enable signal handling.
 func main() {
 	runMain(nil)
 }
@@ -28,6 +55,10 @@ func main() {
 var fatalFunc = log.Fatal
 
 // runMain is the testable entry point. When shutdownCh is nil, uses signal-based shutdown.
+// This function allows for dependency injection of the shutdown channel in tests.
+//
+// Parameters:
+//   - shutdownCh: Channel for triggering shutdown. If nil, signal-based shutdown is used.
 func runMain(shutdownCh <-chan struct{}) {
 	if err := run(shutdownCh); err != nil {
 		fatalFunc(err)
@@ -36,6 +67,21 @@ func runMain(shutdownCh <-chan struct{}) {
 
 // run configures and runs the server. Extracted for testability.
 // If shutdownCh is non-nil, it is used for shutdown; otherwise signal-based shutdown is used.
+//
+// This function performs the following steps:
+//   1. Loads environment configuration
+//   2. Creates and initializes the data store
+//   3. Sets up repositories and services
+//   4. Seeds initial data if the store is empty
+//   5. Configures health monitoring
+//   6. Creates and registers HTTP handlers
+//   7. Starts the HTTP server
+//
+// Parameters:
+//   - shutdownCh: Channel for triggering shutdown. If nil, signal-based shutdown is used.
+//
+// Returns:
+//   - error: Any error encountered during server setup
 func run(shutdownCh <-chan struct{}) error {
 	backend := getEnvOrDefault("STORE_BACKEND", "json")
 	dataFile := getEnvOrDefault("DATA_FILE", "data/data.json")
@@ -65,6 +111,10 @@ func run(shutdownCh <-chan struct{}) error {
 }
 
 // makeSignalShutdownChan returns a channel that closes when SIGINT or SIGTERM is received.
+// This enables graceful shutdown when the process receives termination signals.
+//
+// Returns:
+//   - <-chan struct{}: Channel that closes when shutdown signal is received
 func makeSignalShutdownChan() <-chan struct{} {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -76,6 +126,15 @@ func makeSignalShutdownChan() <-chan struct{} {
 	return done
 }
 
+// getEnvOrDefault returns the value of an environment variable or a default value.
+// This function provides a convenient way to handle optional environment configuration.
+//
+// Parameters:
+//   - key: The environment variable name to look up
+//   - def: The default value to return if the environment variable is not set
+//
+// Returns:
+//   - string: The environment variable value or the default
 func getEnvOrDefault(key, def string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
@@ -84,6 +143,23 @@ func getEnvOrDefault(key, def string) string {
 }
 
 // newHandler returns an http.Handler with all routes registered.
+// This function sets up the HTTP routing for all API endpoints.
+//
+// Registered Routes:
+//   - GET /health: Comprehensive health report
+//   - GET /health/ready: Readiness probe (Kubernetes)
+//   - GET /health/live: Liveness probe (Kubernetes)
+//   - GET|POST /api/users: User listing and creation
+//   - GET|PUT|DELETE /api/users/{id}: User operations by ID
+//   - GET|POST /api/tasks: Task listing and creation
+//   - GET|PUT|DELETE /api/tasks/{id}: Task operations by ID
+//   - GET /api/stats: System statistics
+//
+// Parameters:
+//   - handlers: Container for all HTTP handlers
+//
+// Returns:
+//   - http.Handler: Configured HTTP handler with all routes registered
 func newHandler(handlers *Handlers) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", handlers.HealthHandler.Health)
@@ -98,7 +174,30 @@ func newHandler(handlers *Handlers) http.Handler {
 }
 
 // RunServer runs the HTTP server until the shutdown channel receives a value.
-// shutdownCh: when closed/received, triggers shutdown. shutdownTimeout: max wait for shutdown; if <=0, uses 30s.
+// This function provides a configurable HTTP server with graceful shutdown capabilities.
+//
+// Server Configuration:
+//   - Read Timeout: 15 seconds (time to read request headers and body)
+//   - Write Timeout: 15 seconds (time to write response)
+//   - Idle Timeout: 60 seconds (time to keep idle connections open)
+//
+// Shutdown Process:
+//   1. Wait for signal on shutdownCh
+//   2. Log shutdown initiation
+//   3. Create context with timeout (default 30 seconds)
+//   4. Call server.Shutdown() to gracefully stop accepting new connections
+//   5. Wait for existing connections to finish or timeout
+//   6. Log completion
+//
+// Parameters:
+//   - handler: HTTP handler containing all route handlers
+//   - addr: Server address in format ":port" (e.g., ":8080")
+//   - shutdownCh: Channel that triggers shutdown when closed/received
+//   - shutdownTimeout: Maximum time to wait for graceful shutdown.
+//     If <= 0, defaults to 30 seconds.
+//
+// Example Usage:
+//   RunServer(handler, ":8080", makeShutdownChan(), 30*time.Second)
 func RunServer(handler http.Handler, addr string, shutdownCh <-chan struct{}, shutdownTimeout time.Duration) {
 	server := &http.Server{
 		Addr:         addr,

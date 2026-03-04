@@ -1,3 +1,25 @@
+// Package service provides business logic layer for the REST API.
+//
+// This package contains the service layer that sits between the HTTP handlers
+// and the repository layer. It implements business rules, validation, and
+// orchestration of repository operations.
+//
+// Service Responsibilities:
+//   - Business logic implementation
+//   - Input validation and business rule enforcement
+//   - Repository operation orchestration
+//   - Error handling and business exception management
+//
+// Design Principles:
+//   - Separation of concerns from HTTP and data layers
+//   - Dependency injection for repositories
+//   - Business rule validation
+//   - Transaction management (when applicable)
+//
+// Service Layer Architecture:
+//   - UserService: User business logic and operations
+//   - TaskService: Task business logic and user relationships
+//   - HealthService: System health monitoring logic
 package service
 
 import (
@@ -10,11 +32,38 @@ import (
 )
 
 // UserService contains business logic for user-related operations.
+// This service encapsulates all user-related business rules and provides
+// a clean interface for the HTTP layer to interact with user data.
+//
+// Business Logic:
+//   - User creation with validation
+//   - Email uniqueness checking
+//   - User data updates with validation
+//   - User deletion with dependency checking
+//
+// Dependencies:
+//   - userRepository: Data access layer for user operations
+//
+// Thread Safety:
+//   - Thread safe as long as the repository is thread safe
+//   - No mutable state stored in the service
 type UserService struct {
 	userRepository *repository.UserRepository
 }
 
 // NewUserService creates a UserService backed by the given repository.
+// This function implements dependency injection, making the service
+// easy to test with mock repositories.
+//
+// Parameters:
+//   - repo: Repository for user data access operations
+//
+// Returns:
+//   - *UserService: A new user service instance
+//
+// Example:
+//   service := NewUserService(userRepository)
+//   user, err := service.CreateUser("John", "john@example.com", "developer")
 func NewUserService(repo *repository.UserRepository) *UserService {
 	return &UserService{
 		userRepository: repo,

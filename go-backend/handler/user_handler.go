@@ -1,3 +1,20 @@
+// Package handler provides HTTP request handlers for the REST API.
+//
+// This package contains the HTTP handler layer that processes incoming requests,
+// validates input, calls appropriate services, and formats responses. It follows
+// the handler pattern with dependency injection for testability.
+//
+// Handler Responsibilities:
+//   - HTTP request/response processing
+//   - Input validation and sanitization
+//   - Response formatting and error handling
+//   - HTTP method routing
+//
+// Design Principles:
+//   - Dependency injection for services
+//   - Separation of concerns from business logic
+//   - Consistent error handling and response format
+//   - Input validation before service calls
 package handler
 
 import (
@@ -13,12 +30,43 @@ import (
 )
 
 // UserHandler handles user-related HTTP endpoints.
+// This handler provides CRUD operations for users and additional endpoints
+// for user-related statistics and operations.
+//
+// Supported Endpoints:
+//   - GET /api/users: List all users
+//   - POST /api/users: Create a new user
+//   - GET /api/users/{id}: Get user by ID
+//   - PUT /api/users/{id}: Update user by ID
+//   - DELETE /api/users/{id}: Delete user by ID
+//   - GET /api/stats: Get system statistics
+//
+// Dependencies:
+//   - userService: Handles user business logic and data operations
+//   - taskService: Handles task operations for user statistics
+//
+// Thread Safety:
+//   - Thread safe as long as injected services are thread safe
+//   - No mutable state stored in the handler
 type UserHandler struct {
 	userService *service.UserService
 	taskService *service.TaskService
 }
 
-// NewUserHandler creates a new UserHandler.
+// NewUserHandler creates a new UserHandler with injected dependencies.
+// This function implements the dependency injection pattern, making the handler
+// easy to test and maintain.
+//
+// Parameters:
+//   - userService: Service for user business logic operations
+//   - taskService: Service for task operations (used for statistics)
+//
+// Returns:
+//   - *UserHandler: A new user handler instance
+//
+// Example:
+//   handler := NewUserHandler(userService, taskService)
+//   // Use handler to handle HTTP requests
 func NewUserHandler(userService *service.UserService, taskService *service.TaskService) *UserHandler {
 	return &UserHandler{
 		userService: userService,
