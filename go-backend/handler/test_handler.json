@@ -1,0 +1,18 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Integration User",
+      "email": "integration@example.com",
+      "role": "developer"
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Updated Integration Task",
+      "status": "completed",
+      "userId": 1
+    }
+  ]
+}

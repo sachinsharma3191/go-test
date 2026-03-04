@@ -1,0 +1,114 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com",
+      "role": "developer"
+    },
+    {
+      "id": 2,
+      "name": "Jane Smith",
+      "email": "jane@example.com",
+      "role": "designer"
+    },
+    {
+      "id": 3,
+      "name": "Bob Johnson",
+      "email": "bob@example.com",
+      "role": "manager"
+    },
+    {
+      "id": 4,
+      "name": "sad",
+      "email": "asd@gmail.com",
+      "role": "designer"
+    },
+    {
+      "id": 5,
+      "name": "Sachin Sharma",
+      "email": "sachinsharma3191@gmail.com",
+      "role": "developer"
+    },
+    {
+      "id": 6,
+      "name": "Alice Johnson",
+      "email": "alice@example.com",
+      "role": "developer"
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "title": "New title",
+      "status": "in-progress",
+      "userId": 2
+    },
+    {
+      "id": 2,
+      "title": "Design user interface",
+      "status": "pending",
+      "userId": 2
+    },
+    {
+      "id": 3,
+      "title": "Review code changes",
+      "status": "completed",
+      "userId": 3
+    },
+    {
+      "id": 4,
+      "title": "Implement UI",
+      "status": "in-progress",
+      "userId": 1
+    },
+    {
+      "id": 5,
+      "title": "Implement caching layer",
+      "status": "completed",
+      "userId": 1
+    },
+    {
+      "id": 6,
+      "title": "New task",
+      "status": "in-progress",
+      "userId": 3
+    },
+    {
+      "id": 7,
+      "title": "Implement caching layer",
+      "status": "pending",
+      "userId": 1
+    },
+    {
+      "id": 8,
+      "title": "New task",
+      "status": "pending",
+      "userId": 1
+    },
+    {
+      "id": 9,
+      "title": "Implement caching layer",
+      "status": "pending",
+      "userId": 1
+    },
+    {
+      "id": 10,
+      "title": "New task",
+      "status": "pending",
+      "userId": 1
+    },
+    {
+      "id": 11,
+      "title": "Implement caching layer",
+      "status": "pending",
+      "userId": 1
+    },
+    {
+      "id": 12,
+      "title": "New task",
+      "status": "pending",
+      "userId": 1
+    }
+  ]
+}
